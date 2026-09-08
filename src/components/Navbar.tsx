@@ -1,17 +1,7 @@
 "use client";
 
-import React, { useState } from "react";
+import React from "react";
 import Link from "next/link";
-import {
-  Radio,
-  Smartphone,
-  Search,
-  ExternalLink,
-  Sparkles,
-  QrCode,
-  X,
-  CheckCircle2,
-} from "lucide-react";
 
 interface NavbarProps {
   isRealtime?: boolean;
@@ -24,7 +14,6 @@ export default function Navbar({
   schoolName,
   eventName,
 }: NavbarProps) {
-  const [showAppModal, setShowAppModal] = useState(false);
 
   return (
     <>
@@ -90,7 +79,7 @@ export default function Navbar({
               href="https://play.google.com/store/apps/details?id=com.eventsync.app"
               target="_blank"
               rel="noopener noreferrer"
-              className="flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs font-bold text-slate-800 transition-all hover:border-slate-300 hover:bg-slate-50 shadow-2xs active:scale-95"
+              className="flex items-center gap-2 rounded-xl bg-[#2563EB] px-3.5 py-2 text-xs font-bold text-white shadow-md shadow-blue-600/20 transition-all hover:bg-blue-700 active:scale-95"
               title="Download EventSync App on Google Play Store"
             >
               <svg className="h-4 w-4 shrink-0" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -101,82 +90,9 @@ export default function Navbar({
               </svg>
               <span>Download App</span>
             </a>
-
-            {/* Open App Banner Trigger */}
-            <button
-              onClick={() => setShowAppModal(true)}
-              className="group flex items-center gap-2 rounded-xl bg-[#2563EB] px-3.5 py-2 text-xs font-bold text-white shadow-md shadow-blue-600/20 transition-all hover:bg-blue-700 active:scale-95"
-            >
-              <Smartphone className="h-4 w-4 transition-transform group-hover:-translate-y-0.5" />
-              <span className="hidden sm:inline">Get Mobile App</span>
-              <span className="sm:hidden">App</span>
-            </button>
           </div>
         </div>
       </header>
-
-      {/* App Download Modal */}
-      {showAppModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 p-4 backdrop-blur-sm animate-in fade-in duration-200">
-          <div className="relative w-full max-w-md rounded-2xl border border-slate-200 bg-white p-6 shadow-2xl">
-            <button
-              onClick={() => setShowAppModal(false)}
-              className="absolute right-4 top-4 rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-700"
-            >
-              <X className="h-5 w-5" />
-            </button>
-
-            <div className="flex items-center gap-3 mb-4">
-              <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-blue-600 text-white shadow-md">
-                <Smartphone className="h-6 w-6" />
-              </div>
-              <div>
-                <h3 className="text-lg font-bold text-slate-900">EventSync Mobile</h3>
-                <p className="text-xs text-slate-500">
-                  Real-time Stage Control & Audience Experience
-                </p>
-              </div>
-            </div>
-
-            <div className="space-y-3 rounded-xl border border-slate-200 bg-slate-50 p-4 text-xs text-slate-700 mb-5">
-              <div className="flex items-start gap-2">
-                <CheckCircle2 className="h-4 w-4 text-blue-600 shrink-0 mt-0.5" />
-                <span>Zero latency stage timer countdown notifications</span>
-              </div>
-              <div className="flex items-start gap-2">
-                <CheckCircle2 className="h-4 w-4 text-blue-600 shrink-0 mt-0.5" />
-                <span>Student participant alerts when your slot is up next</span>
-              </div>
-              <div className="flex items-start gap-2">
-                <CheckCircle2 className="h-4 w-4 text-blue-600 shrink-0 mt-0.5" />
-                <span>Instant push updates directly from school stage crew</span>
-              </div>
-            </div>
-
-            <div className="flex flex-col gap-3">
-              <a
-                href="eventsync://home"
-                className="flex items-center justify-center gap-2 rounded-xl bg-blue-600 px-4 py-3 text-sm font-semibold text-white shadow-md shadow-blue-600/20 hover:bg-blue-700 active:scale-98 transition-all"
-              >
-                <Smartphone className="h-4 w-4" />
-                <span>Open in EventSync Android App</span>
-              </a>
-
-              <button
-                onClick={() => {
-                  alert(
-                    "EventSync Android APK can be installed directly from your school admin portal or downloaded from the campus kiosk."
-                  );
-                }}
-                className="flex items-center justify-center gap-2 rounded-xl border border-slate-300 bg-slate-100 px-4 py-2.5 text-xs font-semibold text-slate-700 hover:bg-slate-200 transition-colors"
-              >
-                <ExternalLink className="h-3.5 w-3.5 text-slate-500" />
-                <span>Download Android APK / Install</span>
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </>
   );
 }
