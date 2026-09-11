@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Smartphone, X, ChevronRight } from "lucide-react";
 
 interface DeepLinkBannerProps {
@@ -13,10 +13,34 @@ export default function DeepLinkBanner({
   eventName,
 }: DeepLinkBannerProps) {
   const [dismissed, setDismissed] = useState(false);
+  const [openUrl, setOpenUrl] = useState(`eventsync://event/${slugOrId}`);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    const userAgent = navigator.userAgent || "";
+    const isAndroid = /android/i.test(userAgent);
+    const isMobile = /android|iphone|ipad|ipod/i.test(userAgent);
+
+    const currentUrl = window.location.href;
+    const intentUrl = `intent://event/${slugOrId}#Intent;scheme=eventsync;package=com.eventsync.app;S.browser_fallback_url=${encodeURIComponent(currentUrl)};end;`;
+    const schemeUrl = `eventsync://event/${slugOrId}`;
+
+    const targetUrl = isAndroid ? intentUrl : schemeUrl;
+    setOpenUrl(targetUrl);
+
+    // Auto attempt redirect once per session if opened on mobile browser
+    if (isMobile && !sessionStorage.getItem(`app_launch_attempted_${slugOrId}`)) {
+      sessionStorage.setItem(`app_launch_attempted_${slugOrId}`, "true");
+      try {
+        window.location.href = targetUrl;
+      } catch (e) {
+        console.log("Deep link auto-launch suppressed by browser", e);
+      }
+    }
+  }, [slugOrId]);
 
   if (dismissed) return null;
-
-  const deepLinkUrl = `eventsync://event/${slugOrId}`;
 
   return (
     <div className="fixed bottom-3 inset-x-3 sm:bottom-5 sm:right-6 sm:left-auto z-40 max-w-md animate-in slide-in-from-bottom-5 duration-300">
@@ -48,7 +72,7 @@ export default function DeepLinkBanner({
 
         <div className="flex items-center gap-2 shrink-0">
           <a
-            href={deepLinkUrl}
+            href={openUrl}
             className="flex items-center gap-1 rounded-xl bg-blue-600 px-3 py-1.5 text-xs font-bold text-white shadow-md shadow-blue-600/20 hover:bg-blue-700 active:scale-95 transition-all"
           >
             <span>Open</span>
@@ -67,4 +91,5 @@ export default function DeepLinkBanner({
     </div>
   );
 }
+
 
