@@ -39,10 +39,16 @@ import {
 } from "@/types/event";
 
 interface EventTrackerViewProps {
-  slugOrId: string;
+  slugOrId?: string;
+  schoolId?: string;
+  eventSlug?: string;
 }
 
-export default function EventTrackerView({ slugOrId }: EventTrackerViewProps) {
+export default function EventTrackerView({
+  slugOrId = "",
+  schoolId,
+  eventSlug,
+}: EventTrackerViewProps) {
   const [event, setEvent] = useState<EventDoc | null>(null);
   const [school, setSchool] = useState<SchoolSubscriptionDoc | null>(null);
   const [performances, setPerformances] = useState<PerformanceDoc[]>([]);
@@ -54,21 +60,39 @@ export default function EventTrackerView({ slugOrId }: EventTrackerViewProps) {
   // 1. Subscribe to event document
   useEffect(() => {
     setLoading(true);
-    const unsubEvent = subscribeToEvent(
-      slugOrId,
-      (eventData, realtime) => {
-        setEvent(eventData);
-        setIsRealtime(realtime);
-        setLoading(false);
-      },
-      (err) => {
-        console.warn("Event subscription notice:", err);
-        setLoading(false);
-      }
-    );
+    let unsubEvent: () => void;
+
+    if (schoolId && eventSlug) {
+      unsubEvent = subscribeToEvent(
+        schoolId,
+        eventSlug,
+        (eventData, realtime) => {
+          setEvent(eventData);
+          setIsRealtime(realtime);
+          setLoading(false);
+        },
+        (err) => {
+          console.warn("Event subscription notice:", err);
+          setLoading(false);
+        }
+      );
+    } else {
+      unsubEvent = subscribeToEvent(
+        slugOrId || eventSlug || "",
+        (eventData, realtime) => {
+          setEvent(eventData);
+          setIsRealtime(realtime);
+          setLoading(false);
+        },
+        (err) => {
+          console.warn("Event subscription notice:", err);
+          setLoading(false);
+        }
+      );
+    }
 
     return () => unsubEvent();
-  }, [slugOrId]);
+  }, [schoolId, eventSlug, slugOrId]);
 
   // 2. Subscribe to performances and updates when event is loaded
   useEffect(() => {

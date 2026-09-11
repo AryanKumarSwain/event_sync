@@ -188,7 +188,11 @@ export default function EventSearch({ events }: EventSearchProps) {
                   {/* Footer Actions */}
                   <div className="mt-6 pt-4 border-t border-slate-100 flex items-center justify-between gap-2">
                     <Link
-                      href={`/event/${ev.publicSlug || ev.id}`}
+                      href={
+                        ev.schoolId && (ev.publicSlug || ev.id)
+                          ? `/event/${ev.schoolId}/${ev.publicSlug || ev.id}`
+                          : `/event/${ev.publicSlug || ev.id}`
+                      }
                       className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-2 text-xs font-bold text-white shadow-md shadow-blue-600/20 hover:bg-blue-700 active:scale-95 transition-all"
                     >
                       <span>Watch Live Tracker</span>
@@ -196,7 +200,11 @@ export default function EventSearch({ events }: EventSearchProps) {
                     </Link>
 
                     <a
-                      href={`eventsync://event/${ev.publicSlug || ev.id}`}
+                      href={
+                        ev.schoolId && (ev.publicSlug || ev.id)
+                          ? `eventsync://event/${ev.schoolId}/${ev.publicSlug || ev.id}`
+                          : `eventsync://event/${ev.publicSlug || ev.id}`
+                      }
                       className="inline-flex items-center gap-1 rounded-xl border border-slate-200 bg-slate-100 px-2.5 py-2 text-[11px] font-semibold text-slate-600 hover:text-slate-900 hover:border-slate-300 transition-colors"
                       title="Open in EventSync App"
                     >

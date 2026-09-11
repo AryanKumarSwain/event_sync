@@ -15,70 +15,175 @@ import {
 } from "@/types/event";
 
 /**
- * Subscribe to an event in real-time by either its publicSlug or id
+ * Subscribe to an event in real-time by either (schoolId, eventSlug) or (slugOrId)
  */
+export function subscribeToEvent(
+  schoolId: string,
+  eventSlug: string,
+  onUpdate: (event: EventDoc | null, isRealtime: boolean) => void,
+  onError?: (err: Error) => void
+): () => void;
 export function subscribeToEvent(
   slugOrId: string,
   onUpdate: (event: EventDoc | null, isRealtime: boolean) => void,
   onError?: (err: Error) => void
+): () => void;
+export function subscribeToEvent(
+  param1: string,
+  param2: string | ((event: EventDoc | null, isRealtime: boolean) => void),
+  param3?: ((event: EventDoc | null, isRealtime: boolean) => void) | ((err: Error) => void),
+  param4?: (err: Error) => void
 ): () => void {
-  if (!slugOrId || !isFirebaseConfigured || !db) {
+  let schoolId: string | null = null;
+  let eventSlug: string = "";
+  let onUpdate: (event: EventDoc | null, isRealtime: boolean) => void;
+  let onError: ((err: Error) => void) | undefined;
+
+  if (typeof param2 === "string") {
+    schoolId = param1;
+    eventSlug = param2;
+    onUpdate = param3 as (event: EventDoc | null, isRealtime: boolean) => void;
+    onError = param4;
+  } else {
+    eventSlug = param1;
+    onUpdate = param2 as (event: EventDoc | null, isRealtime: boolean) => void;
+    onError = param3 as (err: Error) => void;
+
+    // Check if single param contains "schoolId/eventSlug" format
+    if (eventSlug && eventSlug.includes("/")) {
+      const parts = eventSlug.split("/");
+      if (parts.length === 2) {
+        schoolId = parts[0];
+        eventSlug = parts[1];
+      }
+    }
+  }
+
+  if (!eventSlug || !isFirebaseConfigured || !db) {
     onUpdate(null, false);
     return () => {};
   }
 
+  let unsubscribePrimary: (() => void) | null = null;
+  let unsubscribeFallback: (() => void) | null = null;
   let unsubscribeDoc: (() => void) | null = null;
-  let unsubscribeSlug: (() => void) | null = null;
 
   try {
     const eventsRef = collection(db, "events");
-    const slugQuery = query(
-      eventsRef,
-      where("publicSlug", "==", slugOrId),
-      limit(1)
-    );
 
-    unsubscribeSlug = onSnapshot(
-      slugQuery,
+    // 1. Primary query based on provided inputs
+    let primaryQuery;
+    if (schoolId) {
+      // Query by both schoolId and publicSlug
+      primaryQuery = query(
+        eventsRef,
+        where("schoolId", "==", schoolId),
+        where("publicSlug", "==", eventSlug),
+        limit(1)
+      );
+    } else {
+      // Query by publicSlug alone
+      primaryQuery = query(
+        eventsRef,
+        where("publicSlug", "==", eventSlug),
+        limit(1)
+      );
+    }
+
+    unsubscribePrimary = onSnapshot(
+      primaryQuery,
       (snapshot) => {
         if (!snapshot.empty) {
           const docData = snapshot.docs[0].data() as EventDoc;
           onUpdate({ ...docData, id: snapshot.docs[0].id || docData.id }, true);
         } else {
-          // Fallback: listen to document by direct ID
-          const directDocRef = doc(db!, "events", slugOrId);
-          if (unsubscribeDoc) unsubscribeDoc();
-          unsubscribeDoc = onSnapshot(
-            directDocRef,
-            (docSnap) => {
-              if (docSnap.exists()) {
-                const data = docSnap.data() as EventDoc;
-                onUpdate({ ...data, id: docSnap.id }, true);
-              } else {
-                onUpdate(null, false);
-              }
-            },
-            (err) => {
-              console.warn("Direct doc snapshot error:", err);
-              onUpdate(null, false);
-              if (onError) onError(err);
-            }
-          );
+          // 2. Fallback query if primary was empty
+          let fallbackQuery;
+          if (schoolId) {
+            // Fallback: Query publicSlug alone regardless of schoolId
+            fallbackQuery = query(
+              eventsRef,
+              where("publicSlug", "==", eventSlug),
+              limit(1)
+            );
+          } else {
+            // Fallback: Direct doc ID
+            fallbackQuery = null;
+          }
+
+          if (fallbackQuery) {
+            if (unsubscribeFallback) unsubscribeFallback();
+            unsubscribeFallback = onSnapshot(
+              fallbackQuery,
+              (fallbackSnap) => {
+                if (!fallbackSnap.empty) {
+                  const data = fallbackSnap.docs[0].data() as EventDoc;
+                  onUpdate({ ...data, id: fallbackSnap.docs[0].id || data.id }, true);
+                } else {
+                  // Fallback to direct doc ID check
+                  listenDirectDoc();
+                }
+              },
+              () => listenDirectDoc()
+            );
+          } else {
+            listenDirectDoc();
+          }
         }
       },
       (err) => {
-        console.warn("Slug query snapshot error:", err);
-        onUpdate(null, false);
-        if (onError) onError(err);
+        console.warn("Primary event query error:", err);
+        listenDirectDoc();
       }
     );
+
+    const listenDirectDoc = () => {
+      if (unsubscribeDoc) unsubscribeDoc();
+      const directDocRef = doc(db!, "events", eventSlug);
+      unsubscribeDoc = onSnapshot(
+        directDocRef,
+        (docSnap) => {
+          if (docSnap.exists()) {
+            const data = docSnap.data() as EventDoc;
+            onUpdate({ ...data, id: docSnap.id }, true);
+          } else if (schoolId) {
+            // Check composite doc id format `schoolId_eventSlug`
+            const compositeDocRef = doc(db!, "events", `${schoolId}_${eventSlug}`);
+            onSnapshot(
+              compositeDocRef,
+              (compSnap) => {
+                if (compSnap.exists()) {
+                  const compData = compSnap.data() as EventDoc;
+                  onUpdate({ ...compData, id: compSnap.id }, true);
+                } else {
+                  onUpdate(null, false);
+                }
+              },
+              (err) => {
+                console.warn("Composite doc snapshot error:", err);
+                onUpdate(null, false);
+                if (onError) onError(err);
+              }
+            );
+          } else {
+            onUpdate(null, false);
+          }
+        },
+        (err) => {
+          console.warn("Direct doc snapshot error:", err);
+          onUpdate(null, false);
+          if (onError) onError(err);
+        }
+      );
+    };
   } catch (err: any) {
     console.error("Error setting up event listener:", err);
     onUpdate(null, false);
   }
 
   return () => {
-    if (unsubscribeSlug) unsubscribeSlug();
+    if (unsubscribePrimary) unsubscribePrimary();
+    if (unsubscribeFallback) unsubscribeFallback();
     if (unsubscribeDoc) unsubscribeDoc();
   };
 }
