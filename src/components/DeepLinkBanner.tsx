@@ -6,39 +6,51 @@ import { Smartphone, X, ChevronRight } from "lucide-react";
 interface DeepLinkBannerProps {
   slugOrId: string;
   eventName: string;
+  schoolId?: string;
 }
 
 export default function DeepLinkBanner({
   slugOrId,
   eventName,
+  schoolId,
 }: DeepLinkBannerProps) {
   const [dismissed, setDismissed] = useState(false);
-  const [openUrl, setOpenUrl] = useState(`eventsync://event/${slugOrId}`);
+  const [targetUrl, setTargetUrl] = useState(`eventsync://event/${slugOrId}`);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
 
     const userAgent = navigator.userAgent || "";
     const isAndroid = /android/i.test(userAgent);
-    const isMobile = /android|iphone|ipad|ipod/i.test(userAgent);
+    const fullPath = schoolId ? `event/${schoolId}/${slugOrId}` : `event/${slugOrId}`;
 
-    const currentUrl = window.location.href;
-    const intentUrl = `intent://event/${slugOrId}#Intent;scheme=eventsync;package=com.eventsync.app;S.browser_fallback_url=${encodeURIComponent(currentUrl)};end;`;
-    const schemeUrl = `eventsync://event/${slugOrId}`;
+    // On Android Chrome, intent:// without package lock allows Android OS to route to any installed app matching scheme=eventsync
+    const androidUrl = `intent://${fullPath}#Intent;scheme=eventsync;end;`;
+    const schemeUrl = `eventsync://${fullPath}`;
 
-    const targetUrl = isAndroid ? intentUrl : schemeUrl;
-    setOpenUrl(targetUrl);
+    setTargetUrl(isAndroid ? androidUrl : schemeUrl);
+  }, [slugOrId, schoolId]);
 
-    // Auto attempt redirect once per session if opened on mobile browser
-    if (isMobile && !sessionStorage.getItem(`app_launch_attempted_${slugOrId}`)) {
-      sessionStorage.setItem(`app_launch_attempted_${slugOrId}`, "true");
-      try {
-        window.location.href = targetUrl;
-      } catch (e) {
-        console.log("Deep link auto-launch suppressed by browser", e);
-      }
+  const handleOpen = (e: React.MouseEvent<HTMLAnchorElement>) => {
+    // Also trigger direct scheme attempt as backup
+    const fullPath = schoolId ? `event/${schoolId}/${slugOrId}` : `event/${slugOrId}`;
+    const directScheme = `eventsync://${fullPath}`;
+    
+    // Create temporary hidden iframe for custom protocol fallback
+    try {
+      const iframe = document.createElement("iframe");
+      iframe.style.display = "none";
+      iframe.src = directScheme;
+      document.body.appendChild(iframe);
+      setTimeout(() => {
+        if (document.body.contains(iframe)) {
+          document.body.removeChild(iframe);
+        }
+      }, 1000);
+    } catch (err) {
+      console.warn("Iframe fallback error:", err);
     }
-  }, [slugOrId]);
+  };
 
   if (dismissed) return null;
 
@@ -72,8 +84,9 @@ export default function DeepLinkBanner({
 
         <div className="flex items-center gap-2 shrink-0">
           <a
-            href={openUrl}
-            className="flex items-center gap-1 rounded-xl bg-blue-600 px-3 py-1.5 text-xs font-bold text-white shadow-md shadow-blue-600/20 hover:bg-blue-700 active:scale-95 transition-all"
+            href={targetUrl}
+            onClick={handleOpen}
+            className="flex items-center gap-1 rounded-xl bg-blue-600 px-3 py-1.5 text-xs font-bold text-white shadow-md shadow-blue-600/20 hover:bg-blue-700 active:scale-95 transition-all cursor-pointer"
           >
             <span>Open</span>
             <ChevronRight className="h-3.5 w-3.5" />

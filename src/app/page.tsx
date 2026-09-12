@@ -16,6 +16,7 @@ import Navbar from "@/components/Navbar";
 import EventSearch from "@/components/EventSearch";
 import { subscribeToPublicEvents } from "@/lib/firestoreService";
 import { EventDoc } from "@/types/event";
+import { openInApp } from "@/lib/deepLink";
 
 function HomeContent() {
   const searchParams = useSearchParams();
@@ -177,13 +178,13 @@ function HomeContent() {
               </div>
 
               <div className="flex flex-col sm:flex-row gap-3 shrink-0">
-                <a
-                  href="eventsync://home"
-                  className="flex items-center justify-center gap-2 rounded-2xl bg-blue-600 px-5 py-3 text-xs font-bold text-white shadow-md shadow-blue-600/20 hover:bg-blue-700 transition-all active:scale-95"
+                <button
+                  onClick={() => openInApp("home")}
+                  className="flex items-center justify-center gap-2 rounded-2xl bg-blue-600 px-5 py-3 text-xs font-bold text-white shadow-md shadow-blue-600/20 hover:bg-blue-700 transition-all active:scale-95 cursor-pointer"
                 >
                   <Smartphone className="h-4 w-4" />
                   <span>Launch EventSync App</span>
-                </a>
+                </button>
               </div>
             </div>
           </div>

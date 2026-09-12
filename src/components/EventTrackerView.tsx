@@ -543,6 +543,7 @@ export default function EventTrackerView({
       {/* Floating Bottom App Banner */}
       <DeepLinkBanner
         slugOrId={event.publicSlug || event.id}
+        schoolId={event.schoolId}
         eventName={event.name}
       />
     </div>

@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import { EventDoc } from "@/types/event";
 import { getStatusColor } from "@/lib/utils";
+import { openInApp } from "@/lib/deepLink";
 
 interface EventSearchProps {
   events: EventDoc[];
@@ -199,18 +200,14 @@ export default function EventSearch({ events }: EventSearchProps) {
                       <ArrowRight className="h-3.5 w-3.5" />
                     </Link>
 
-                    <a
-                      href={
-                        ev.schoolId && (ev.publicSlug || ev.id)
-                          ? `eventsync://event/${ev.schoolId}/${ev.publicSlug || ev.id}`
-                          : `eventsync://event/${ev.publicSlug || ev.id}`
-                      }
-                      className="inline-flex items-center gap-1 rounded-xl border border-slate-200 bg-slate-100 px-2.5 py-2 text-[11px] font-semibold text-slate-600 hover:text-slate-900 hover:border-slate-300 transition-colors"
+                    <button
+                      onClick={() => openInApp(ev.publicSlug || ev.id, ev.schoolId)}
+                      className="inline-flex items-center gap-1 rounded-xl border border-slate-200 bg-slate-100 px-2.5 py-2 text-[11px] font-semibold text-slate-600 hover:text-slate-900 hover:border-slate-300 transition-colors cursor-pointer"
                       title="Open in EventSync App"
                     >
                       <Smartphone className="h-3.5 w-3.5 text-blue-600" />
                       <span className="hidden sm:inline">App</span>
-                    </a>
+                    </button>
                   </div>
                 </div>
               </div>

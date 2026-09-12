@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import { EventDoc, SchoolSubscriptionDoc } from "@/types/event";
 import { getStatusColor, getCategoryBadge } from "@/lib/utils";
+import { openInApp } from "@/lib/deepLink";
 
 interface EventHeaderProps {
   event: EventDoc;
@@ -157,8 +158,16 @@ export default function EventHeader({ event, school }: EventHeaderProps) {
           {/* Actions */}
           <div className="flex flex-wrap items-center gap-2 pt-2">
             <button
+              onClick={() => openInApp(event.publicSlug || event.id, event.schoolId)}
+              className="flex items-center gap-1.5 rounded-xl bg-blue-600 px-4 py-2.5 text-xs font-bold text-white shadow-md shadow-blue-600/20 hover:bg-blue-700 active:scale-95 transition-all cursor-pointer"
+            >
+              <Smartphone className="h-3.5 w-3.5" />
+              <span>Open in EventSync App</span>
+            </button>
+
+            <button
               onClick={handleWhatsAppShare}
-              className="flex items-center gap-1.5 rounded-xl bg-emerald-600 px-4 py-2.5 text-xs font-bold text-white shadow-md shadow-emerald-600/20 hover:bg-emerald-700 active:scale-95 transition-all"
+              className="flex items-center gap-1.5 rounded-xl bg-emerald-600 px-4 py-2.5 text-xs font-bold text-white shadow-md shadow-emerald-600/20 hover:bg-emerald-700 active:scale-95 transition-all cursor-pointer"
             >
               <MessageSquare className="h-3.5 w-3.5" />
               <span>Share via WhatsApp</span>
@@ -166,7 +175,7 @@ export default function EventHeader({ event, school }: EventHeaderProps) {
 
             <button
               onClick={handleCopyLink}
-              className="flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-xs font-bold text-slate-700 hover:bg-slate-50 transition-all active:scale-95 shadow-2xs"
+              className="flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-xs font-bold text-slate-700 hover:bg-slate-50 transition-all active:scale-95 shadow-2xs cursor-pointer"
             >
               {copied ? (
                 <>
